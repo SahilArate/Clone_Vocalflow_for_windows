@@ -1,43 +1,34 @@
 {
-  "name": "clone_vocalflow_for_windows",
+  "name": "vocalflow-windows",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "VocalFlow for Windows - Voice to Text Desktop App",
+  "main": "electron.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "concurrently \"next dev src/renderer\" \"wait-on http://localhost:3000 && electron .\"",
+    "build:next": "next build src/renderer",
+    "build:electron": "electron-builder",
+    "build": "npm run build:next && npm run build:electron",
+    "start": "electron ."
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/SahilArate/Clone_Vocalflow_for_windows.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/SahilArate/Clone_Vocalflow_for_windows/issues"
-  },
-  "homepage": "https://github.com/SahilArate/Clone_Vocalflow_for_windows#readme",
+  "keywords": ["voice", "speech-to-text", "electron", "windows"],
+  "author": "Sahil Bharat Arate",
+  "license": "MIT",
   "devDependencies": {
-    "@types/electron": "^1.4.38",
-    "concurrently": "^9.2.1",
-    "electron": "^41.1.1",
-    "electron-builder": "^26.8.1",
-    "ts-node": "^10.9.2",
-    "wait-on": "^9.0.4"
+    "concurrently": "^8.0.0",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.0.0",
+    "ts-node": "^10.9.0",
+    "wait-on": "^7.0.0"
   },
-  "dependencies": {
-    "@deepgram/sdk": "^5.0.0",
-    "@jitsi/robotjs": "^0.6.21",
-    "@types/node": "^25.5.2",
-    "@types/react": "^19.2.14",
-    "dotenv": "^17.4.1",
-    "groq-sdk": "^1.1.2",
-    "next": "^16.2.2",
-    "node-global-key-listener": "^0.3.0",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "screenshot-desktop": "^1.15.3",
-    "typescript": "^6.0.2"
+  "build": {
+    "appId": "com.vocalflow.windows",
+    "productName": "VocalFlow",
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    }
   }
 }
