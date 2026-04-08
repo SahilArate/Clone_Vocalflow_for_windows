@@ -63,19 +63,13 @@ async function injectText(text) {
 app.whenReady().then(async () => {
   createWindow();
 
-  // Dynamically load services
-  const { DeepgramClient, listen } = require('@deepgram/sdk');
-  const LiveTranscriptionEvents = listen.LiveTranscriptionEvents || {
-    Open: 'open',
-    Transcript: 'Results',
-    Error: 'error',
-    Close: 'close',
-  };
+  // Load packages
+  const { DeepgramClient } = require('@deepgram/sdk');
   const Groq = require('groq-sdk');
-  const { uIOhook, UiohookKey } = require('uiohook-napi');
+  const { uIOhook } = require('uiohook-napi');
   const mic = require('mic');
 
-  // Load config
+  // Load API keys from .env
   require('dotenv').config();
   const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY || '';
   const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
@@ -91,32 +85,45 @@ app.whenReady().then(async () => {
 
   // ── Deepgram Streaming ──────────────────────────────────────────────────────
   async function startDeepgram() {
-    dgConnection = deepgramClient.listen.live({
-      model: 'nova-2',
-      language: 'en-US',
-      smart_format: true,
-      interim_results: true,
-    });
+    return new Promise((resolve) => {
+      dgConnection = deepgramClient.listen.live({
+        model: 'nova-2',
+        language: 'en-US',
+        smart_format: true,
+        interim_results: true,
+      });
 
-    dgConnection.on(LiveTranscriptionEvents.Open, () => {
-      console.log('[Deepgram] Connected');
-    });
+      // Wait for connection to open before resolving
+      dgConnection.on('open', () => {
+        console.log('[Deepgram] Connected');
+        resolve();
+      });
 
-    dgConnection.on(LiveTranscriptionEvents.Transcript, (data) => {
-      const transcript = data?.channel?.alternatives?.[0]?.transcript;
-      const isFinal = data?.is_final;
+      // Live transcript events
+      dgConnection.on('Results', (data) => {
+        const transcript = data?.channel?.alternatives?.[0]?.transcript;
+        const isFinal = data?.is_final;
 
-      if (transcript && transcript.trim()) {
-        if (isFinal) finalTranscript += ' ' + transcript;
-        mainWindow?.webContents.send('live-transcript', {
-          text: transcript,
-          isFinal,
-        });
-      }
-    });
+        if (transcript && transcript.trim()) {
+          if (isFinal) finalTranscript += ' ' + transcript;
+          mainWindow?.webContents.send('live-transcript', {
+            text: transcript,
+            isFinal,
+          });
+        }
+      });
 
-    dgConnection.on(LiveTranscriptionEvents.Error, (err) => {
-      console.error('[Deepgram] Error:', err);
+      dgConnection.on('error', (err) => {
+        console.error('[Deepgram] Error:', err);
+        resolve(); // resolve anyway so recording still works
+      });
+
+      dgConnection.on('close', () => {
+        console.log('[Deepgram] Connection closed');
+      });
+
+      // Safety timeout — resolve after 3s even if open event doesn't fire
+      setTimeout(resolve, 3000);
     });
   }
 
@@ -136,7 +143,8 @@ app.whenReady().then(async () => {
         max_tokens: 1024,
       });
       return result.choices?.[0]?.message?.content?.trim() || text;
-    } catch {
+    } catch (err) {
+      console.error('[Groq] Enhancement failed:', err.message);
       return text;
     }
   }
@@ -148,6 +156,7 @@ app.whenReady().then(async () => {
     finalTranscript = '';
 
     try {
+      console.log('[App] Connecting to Deepgram...');
       await startDeepgram();
 
       micInstance = mic({ rate: '16000', channels: '1', debug: false });
@@ -157,12 +166,17 @@ app.whenReady().then(async () => {
         if (dgConnection) dgConnection.send(data);
       });
 
+      micStream.on('error', (err) => {
+        console.error('[Mic] Error:', err.message);
+      });
+
       micInstance.start();
       mainWindow?.webContents.send('recording-status', { isRecording: true });
-      console.log('[App] Recording started');
+      console.log('[App] Recording started — speak now!');
     } catch (err) {
-      console.error('[App] Start recording error:', err);
+      console.error('[App] Start recording error:', err.message);
       isRecording = false;
+      mainWindow?.webContents.send('recording-error', { error: err.message });
     }
   }
 
@@ -172,34 +186,46 @@ app.whenReady().then(async () => {
     isRecording = false;
 
     try {
-      if (micInstance) { micInstance.stop(); micInstance = null; }
-      if (dgConnection) { dgConnection.finish(); dgConnection = null; }
+      if (micInstance) {
+        micInstance.stop();
+        micInstance = null;
+      }
+
+      if (dgConnection) {
+        dgConnection.finish();
+        dgConnection = null;
+      }
 
       mainWindow?.webContents.send('recording-status', { isRecording: false });
       mainWindow?.webContents.send('processing-status', { isProcessing: true });
 
-      console.log('[App] Processing transcript:', finalTranscript.trim());
+      console.log('[App] Recording stopped. Transcript:', finalTranscript.trim());
 
       if (finalTranscript.trim()) {
+        console.log('[App] Enhancing with Groq...');
         const enhanced = await enhanceText(finalTranscript.trim());
+        console.log('[App] Enhanced:', enhanced);
+
         await injectText(enhanced);
+
         mainWindow?.webContents.send('transcription-result', {
           original: finalTranscript.trim(),
           enhanced,
         });
+      } else {
+        console.log('[App] No transcript captured');
       }
 
       mainWindow?.webContents.send('processing-status', { isProcessing: false });
     } catch (err) {
-      console.error('[App] Stop recording error:', err);
+      console.error('[App] Stop recording error:', err.message);
+      mainWindow?.webContents.send('processing-status', { isProcessing: false });
     }
   }
 
   // ── Hotkey Listener ─────────────────────────────────────────────────────────
-// ── Hotkey Listener ─────────────────────────────────────────────────────────
+  const RIGHT_ALT = 3640;
   let keyHeld = false;
-
-const RIGHT_ALT = 3640;
 
   uIOhook.on('keydown', (event) => {
     if (event.keycode === RIGHT_ALT && !keyHeld) {
