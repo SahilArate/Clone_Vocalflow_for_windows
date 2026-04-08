@@ -2,19 +2,39 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "commonjs",
-    "lib": ["ES2020", "DOM"],
-    "jsx": "react-jsx",
-    "strict": true,
+    "lib": [
+      "ES2020",
+      "DOM"
+    ],
+    "jsx": "preserve",
+    "strict": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "outDir": "./dist",
     "baseUrl": ".",
+    "types": [
+      "node"
+    ],
     "paths": {
-      "@/*": ["src/*"]
-    }
+      "@/*": [
+        "src/*"
+      ]
+    },
+    "allowJs": true,
+    "noEmit": true,
+    "incremental": true,
+    "moduleResolution": "node",
+    "isolatedModules": true
   },
-  "include": ["src/**/*", "electron.js"],
-  "exclude": ["node_modules", "dist", ".next"]
+  "include": [
+    "src/**/*",
+    "electron.js"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".next"
+  ]
 }

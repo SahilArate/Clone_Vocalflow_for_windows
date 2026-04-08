@@ -1,0 +1,49 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary: #4F46E5;
+  --primary-dark: #3730A3;
+  --danger: #EF4444;
+  --success: #10B981;
+  --warning: #F59E0B;
+  --bg: #0F0F1A;
+  --bg-card: #1A1A2E;
+  --bg-card-hover: #1F1F35;
+  --border: #2D2D4E;
+  --text: #F8F8FF;
+  --text-muted: #9090B0;
+  --recording-glow: rgba(239, 68, 68, 0.4);
+  --primary-glow: rgba(79, 70, 229, 0.3);
+}
+
+html,
+body {
+  background: transparent;
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  height: 100%;
+  overflow: hidden;
+  user-select: none;
+}
+
+#__next {
+  height: 100%;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}

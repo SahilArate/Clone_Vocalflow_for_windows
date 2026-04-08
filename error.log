@@ -1,0 +1,15 @@
+D:\Clone_Vocalflow_for_windows\electron.js:53
+app.whenReady().then(async () => {
+    ^
+
+TypeError: Cannot read properties of undefined (reading 'whenReady')
+    at Object.<anonymous> (D:\Clone_Vocalflow_for_windows\electron.js:53:5)
+    at Module._compile (node:internal/modules/cjs/loader:1812:14)
+    at Object.<anonymous> (node:internal/modules/cjs/loader:1943:10)
+    at Module.load (node:internal/modules/cjs/loader:1533:32)
+    at Module._load (node:internal/modules/cjs/loader:1335:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.require (node:internal/modules/cjs/loader:1556:12)
+    at require (node:internal/modules/helpers:152:16)
+    at [eval]:1:1
+    at runScriptInThisContext (node:internal/vm:219:10)
