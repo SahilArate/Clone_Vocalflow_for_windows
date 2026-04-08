@@ -10,7 +10,12 @@
     "build": "npm run build:next && npm run build:electron",
     "start": "electron ."
   },
-  "keywords": ["voice", "speech-to-text", "electron", "windows"],
+  "keywords": [
+    "voice",
+    "speech-to-text",
+    "electron",
+    "windows"
+  ],
   "author": "Sahil Bharat Arate",
   "license": "MIT",
   "devDependencies": {
@@ -30,5 +35,8 @@
       "target": "nsis",
       "icon": "assets/icon.ico"
     }
+  },
+  "dependencies": {
+    "mic": "^2.1.2"
   }
 }
