@@ -86,20 +86,18 @@ app.whenReady().then(async () => {
   // ── Deepgram Streaming ──────────────────────────────────────────────────────
   async function startDeepgram() {
     return new Promise((resolve) => {
-      dgConnection = deepgramClient.listen.live({
+      dgConnection = deepgramClient.listen.v1.connect({
         model: 'nova-2',
         language: 'en-US',
         smart_format: true,
         interim_results: true,
       });
 
-      // Wait for connection to open before resolving
       dgConnection.on('open', () => {
         console.log('[Deepgram] Connected');
         resolve();
       });
 
-      // Live transcript events
       dgConnection.on('Results', (data) => {
         const transcript = data?.channel?.alternatives?.[0]?.transcript;
         const isFinal = data?.is_final;
@@ -114,15 +112,14 @@ app.whenReady().then(async () => {
       });
 
       dgConnection.on('error', (err) => {
-        console.error('[Deepgram] Error:', err);
-        resolve(); // resolve anyway so recording still works
+        console.error('[Deepgram] Error:', err.message);
+        resolve();
       });
 
       dgConnection.on('close', () => {
         console.log('[Deepgram] Connection closed');
       });
 
-      // Safety timeout — resolve after 3s even if open event doesn't fire
       setTimeout(resolve, 3000);
     });
   }
