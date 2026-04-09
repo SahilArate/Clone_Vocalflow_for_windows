@@ -8,7 +8,7 @@ Hold `Right Alt` → Speak → Release → Text appears wherever your cursor is.
 
 ## What it does
 
-VocalFlow sits quietly in your system tray and listens for a hotkey. The moment you hold `Right Alt`, it starts recording your microphone in real time and streams the audio directly to Deepgram for transcription. When you release the key, it stops recording, optionally runs the transcript through Groq to clean up grammar and spelling, and then pastes the final text at your cursor — in whatever app you were using.
+VocalFlow sits quietly in your system tray and listens for a hotkey. The moment you hold `Right Alt`, it starts recording your microphone in real time and streams the audio directly to Deepgram for transcription. When you release the key, it stops recording, runs the transcript through Groq to clean up grammar and spelling, and then pastes the final text at your cursor — in whatever app you were using.
 
 No clicking. No switching windows. Just speak and it types.
 
@@ -20,9 +20,9 @@ No clicking. No switching windows. Just speak and it types.
 - **Real-time streaming transcription** — powered by Deepgram's WebSocket API (nova-2 model)
 - **AI post-processing** — Groq LLM fixes grammar, spelling and punctuation before injection
 - **Works in any app** — text is injected via simulated `Ctrl+V`, so it works everywhere
-- **System tray icon** — lives in the taskbar tray, changes color when recording
+- **System tray icon** — lives in the Windows taskbar tray
 - **Account balance display** — shows your Deepgram and Groq credit balance inside the app
-- **Dark UI** — clean, minimal settings panel built with Next.js and TypeScript
+- **Dark UI** — clean, minimal panel built with Next.js and TypeScript
 
 ---
 
@@ -32,10 +32,10 @@ No clicking. No switching windows. Just speak and it types.
 |---|---|
 | Desktop shell | Electron v28 |
 | Frontend UI | Next.js 14 + TypeScript + React 18 |
-| Speech to Text | Deepgram SDK (nova-2, WebSocket streaming) |
+| Speech to Text | Deepgram SDK v3 (nova-2, WebSocket streaming) |
 | AI Enhancement | Groq SDK (llama3-8b-8192) |
 | Hotkey detection | uiohook-napi |
-| Audio capture | mic (node.js) |
+| Audio capture | mic (Node.js) |
 | Text injection | PowerShell + Windows clipboard |
 
 ---
@@ -66,56 +66,45 @@ npm install
 
 ### 3. Configure your API keys
 
-The API keys are stored in a `.env` file at the root of the project. There is also a `src/config/config.ts` file where the Deepgram key is hardcoded as required by the assignment.
-
-Create a `.env` file in the root:
+Create a `.env` file in the root of the project:
 
 ```
 DEEPGRAM_API_KEY=your_deepgram_api_key_here
 GROQ_API_KEY=your_groq_api_key_here
 ```
 
-Also open `src/config/config.ts` and replace the placeholder with your actual Deepgram key:
-
-```typescript
-const config = {
-  deepgram: {
-    apiKey: 'your_deepgram_api_key_here', // hardcoded as required
-    ...
-  },
-  ...
-}
-```
+The Deepgram key is also hardcoded in `src/config/config.ts` as required by the assignment spec. Open that file and replace the placeholder with your actual key.
 
 ### 4. Run in development
 
-Open two terminals in the project root:
+You need two terminals open at the same time.
 
 **Terminal 1 — Start the UI:**
 ```bash
 npx next dev
 ```
 
-**Terminal 2 — Start Electron (after Terminal 1 shows "Ready"):**
+Wait until you see `✓ Ready` in Terminal 1, then open Terminal 2.
+
+**Terminal 2 — Start Electron:**
 ```bash
 node_modules\.bin\electron.cmd .
 ```
 
-The app window will appear. You will also see a VocalFlow icon in your system tray.
+The VocalFlow window will appear on screen.
 
 ---
 
 ## How to use
 
 1. Open any app where you want to type — Notepad, browser, Word, etc.
-2. Click inside a text field so your cursor is there
-3. Hold the `Right Alt` key on your keyboard
-4. Speak clearly into your microphone
-5. Release `Right Alt`
-6. Wait about 1-2 seconds for processing
-7. Your spoken words will appear at the cursor, grammar-corrected
+2. Click inside a text field so your cursor is placed there
+3. Hold the `Right Alt` key on your keyboard and speak
+4. Release `Right Alt` when done speaking
+5. Wait 1-2 seconds for Groq to process
+6. Your words appear at the cursor, grammar-corrected
 
-The VocalFlow window shows a live transcript while you speak, and displays the original vs enhanced text after injection.
+The VocalFlow window shows a live transcript while you speak and displays the original vs Groq-enhanced text after injection.
 
 ---
 
@@ -124,57 +113,53 @@ The VocalFlow window shows a live transcript while you speak, and displays the o
 ```
 clone-vocalflow-for-windows/
 │
-├── electron.js                  # Main Electron entry point — app lifecycle,
-│                                # recording logic, hotkey, IPC handlers
+├── electron.js                  # Main Electron entry point — window creation,
+│                                # recording logic, hotkey, Deepgram, Groq, IPC
 │
-├── preload.js                   # Electron preload — exposes safe APIs to
-│                                # the renderer via contextBridge
+├── preload.js                   # Electron preload script — exposes safe APIs
+│                                # to the Next.js renderer via contextBridge
 │
 ├── next.config.js               # Next.js configuration
 ├── tsconfig.json                # TypeScript configuration
+├── package.json                 # Project dependencies and scripts
 ├── .env                         # API keys (not committed to git)
 ├── .gitignore                   # Ignores node_modules, .env, build output
 │
 ├── src/
 │   ├── config/
-│   │   └── config.ts            # Centralized config — API keys, model names,
-│   │                            # hotkey settings, app metadata
+│   │   └── config.ts            # Centralized config — hardcoded Deepgram key,
+│   │                            # model names, hotkey, app metadata
 │   │
 │   ├── services/
-│   │   ├── deepgram.ts          # Deepgram service — WebSocket streaming,
-│   │   │                        # live transcription, balance fetch
-│   │   └── groq.ts              # Groq service — LLM post-processing,
-│   │                            # grammar correction, balance fetch
+│   │   ├── deepgram.ts          # Deepgram service class — WebSocket streaming,
+│   │   │                        # live transcription, balance API
+│   │   └── groq.ts              # Groq service class — LLM post-processing,
+│   │                            # grammar correction
 │   │
 │   ├── main/
-│   │   ├── index.ts             # Main process logic (TypeScript version)
+│   │   ├── index.ts             # Main process entry (TypeScript reference)
 │   │   ├── hotkey.ts            # Global hotkey listener service
 │   │   ├── injector.ts          # Text injection via clipboard + PowerShell
 │   │   └── tray.ts              # System tray icon and context menu
 │   │
-│   ├── types/
-│   │   ├── index.ts             # Shared TypeScript interfaces and types
-│   │   └── mic.d.ts             # Type declaration for mic package
-│   │
-│   └── renderer/
-│       ├── pages/               # Next.js pages (copied to /pages for build)
-│       ├── components/          # React components (copied to /components)
-│       └── styles/              # Global CSS (copied to /styles)
+│   └── types/
+│       ├── index.ts             # Shared TypeScript interfaces and types
+│       └── mic.d.ts             # Type declaration for mic package
 │
 ├── pages/
 │   ├── _app.tsx                 # Next.js app wrapper, imports global styles
-│   └── index.tsx                # Main UI page — status, balance, transcript
+│   └── index.tsx                # Main UI — status card, balance card, transcript
 │
 ├── components/
-│   ├── StatusCard.tsx           # Recording status display with pulse animation
-│   ├── BalanceCard.tsx          # Deepgram + Groq balance display with refresh
-│   └── TranscriptBox.tsx        # Shows original and Groq-enhanced transcription
+│   ├── StatusCard.tsx           # Recording status with pulse animation
+│   ├── BalanceCard.tsx          # Deepgram + Groq balance with refresh button
+│   └── TranscriptBox.tsx        # Original vs Groq-enhanced transcription display
 │
 ├── styles/
-│   └── globals.css              # Global dark theme CSS variables and base styles
+│   └── globals.css              # Dark theme CSS variables and base styles
 │
 └── assets/
-    └── icon.ico                 # App icon for system tray and window
+    └── icon.ico                 # App icon
 ```
 
 ---
@@ -195,23 +180,27 @@ User holds Right Alt
         ↓
 uiohook-napi detects keydown (keycode 3640)
         ↓
-mic starts capturing audio from default microphone
+Deepgram WebSocket connection opened via listen.v1.connect()
         ↓
-Audio chunks streamed to Deepgram via WebSocket
+mic starts capturing audio from default microphone at 16kHz
         ↓
-Deepgram returns live transcript in real time
+Audio chunks streamed live to Deepgram WebSocket
+        ↓
+Deepgram returns interim + final transcripts in real time
         ↓
 User releases Right Alt
         ↓
 mic stops, Deepgram connection closed
         ↓
-Final transcript sent to Groq for grammar fix
+Final transcript sent to Groq llama3-8b-8192 for grammar fix
         ↓
-Corrected text written to clipboard
+Corrected text written to Windows clipboard
         ↓
 PowerShell simulates Ctrl+V at cursor position
         ↓
-Text appears in whatever app the user was in
+Text appears in whatever app the user was typing in
+        ↓
+Original clipboard content is restored
 ```
 
 ---
@@ -231,24 +220,16 @@ This runs Next.js static export first, then packages everything with electron-bu
 ## Submission
 
 - GitHub URL: `https://github.com/YOUR_USERNAME/clone-vocalflow-for-windows`
-- ZIP file: exported without `node_modules/` folder
-
-To create the ZIP for submission:
-
-```bash
-# Make sure node_modules is in .gitignore, then zip everything else
-```
-
-Or just download the ZIP from GitHub directly — it won't include `node_modules`.
+- ZIP file submitted without `node_modules/` folder
 
 ---
 
 ## Notes
 
-- Groq does not currently expose a public balance API, so the Groq balance shows as "N/A" in the UI. This is expected behavior.
-- The app requires microphone permission on first run — Windows will prompt you automatically.
-- The `Right Alt` key was chosen to avoid conflicts with common shortcuts. It can be changed in `electron.js` by updating the `RIGHT_ALT` keycode constant.
-- Text injection uses the Windows clipboard temporarily. Your original clipboard content is restored after injection.
+- Groq does not expose a public balance API, so the Groq balance shows as "N/A" in the UI. This is expected.
+- The app requires microphone access — Windows will prompt automatically on first use.
+- `Right Alt` was chosen to avoid conflicts with common shortcuts. You can change it in `electron.js` by updating the `RIGHT_ALT` constant (currently set to keycode `3640`).
+- Text injection uses the Windows clipboard temporarily. Your original clipboard content is restored after injection completes.
 
 ---
 
